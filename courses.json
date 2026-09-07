@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "academicYear": "2569",
+  "yearLevel": 3,
+  "semester": 1,
+  "institution": "มหาวิทยาลัยมหิดล วิทยาเขตศาลายา คณะสังคมศาสตร์และมนุษยศาสตร์",
+  "programme": "หลักสูตรวิทยาศาสตรบัณฑิต สาขาเวชระเบียน",
+  "schedule": {
+    "title": "ตารางสอน ภาคการศึกษาที่ 1 ปีการศึกษา 2569 ชั้นปีที่ 3",
+    "period": "3 สิงหาคม 2569 – 11 ธันวาคม 2569",
+    "sourceFileName": "ตารางเรียน",
+    "sourceFileId": "10tCy3gGafSc54kuKQaaB3fJn-3BHC5LP",
+    "sourceModifiedTime": "2026-09-07T08:52:38.142Z"
+  },
+  "generatedAt": "2026-09-07T08:55:00Z",
+  "courses": [
+    {
+      "code": "สมวบ 381",
+      "name": "การให้รหัสทางการแพทย์ขั้นสูง 2",
+      "day": "วันจันทร์",
+      "available": false,
+      "path": null
+    },
+    {
+      "code": "สมวบ 373",
+      "name": "สถิติวิเคราะห์ 1",
+      "day": "วันอังคาร",
+      "available": false,
+      "path": null
+    },
+    {
+      "code": "สมวบ 386",
+      "name": "จริยธรรมวิชาชีพและกฎหมายทางการแพทย์",
+      "day": "วันอังคาร",
+      "available": false,
+      "path": null
+    },
+    {
+      "code": "สมวบ 383",
+      "name": "การบันทึกทางการแพทย์ 2",
+      "day": "วันพฤหัสบดี",
+      "available": true,
+      "testType": "Match Test",
+      "path": "shmi-383.html"
+    },
+    {
+      "code": "สมวบ 387",
+      "name": "หลักระบาดวิทยา",
+      "day": "วันพฤหัสบดี",
+      "available": false,
+      "path": null
+    },
+    {
+      "code": "สมวบ 380",
+      "name": "การจัดการระบบฐานข้อมูลเวชระเบียน",
+      "day": "วันศุกร์",
+      "available": false,
+      "path": null
+    }
+  ]
+}
