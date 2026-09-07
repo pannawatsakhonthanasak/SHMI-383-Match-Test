@@ -1,10 +1,18 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "academicYear": "2569",
   "yearLevel": 3,
   "semester": 1,
   "institution": "มหาวิทยาลัยมหิดล วิทยาเขตศาลายา คณะสังคมศาสตร์และมนุษยศาสตร์",
   "programme": "หลักสูตรวิทยาศาสตรบัณฑิต สาขาเวชระเบียน",
+  "academicCalendar": {
+    "termStart": "2026-08-03",
+    "termEnd": "2026-12-14",
+    "status": "current",
+    "label": "กำลังเรียน",
+    "period": "3 สิงหาคม 2569 – 14 ธันวาคม 2569",
+    "source": "กองบริหารการศึกษา มหาวิทยาลัยมหิดล"
+  },
   "schedule": {
     "title": "ตารางสอน ภาคการศึกษาที่ 1 ปีการศึกษา 2569 ชั้นปีที่ 3",
     "period": "3 สิงหาคม 2569 – 11 ธันวาคม 2569",
@@ -12,7 +20,7 @@
     "sourceFileId": "10tCy3gGafSc54kuKQaaB3fJn-3BHC5LP",
     "sourceModifiedTime": "2026-09-07T08:52:38.142Z"
   },
-  "generatedAt": "2026-09-07T09:26:00Z",
+  "generatedAt": "2026-09-07T11:58:30Z",
   "courses": [
     {
       "code": "สมวบ 381",
