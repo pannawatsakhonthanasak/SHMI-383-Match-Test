@@ -28,23 +28,31 @@
     $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · คลัง ${data.questions.length} ชุดข้อสอบ`;
     renderSourcePanel(sourceMeta);
     bind();
+    syncSelectors();
     reset();
   }
 
   function bind() {
-    $$('.mode-btn').forEach(b => b.onclick = () => {
-      state.mode = b.dataset.mode;
-      $$('.mode-btn').forEach(x => x.classList.toggle('active', x === b));
+    const modeSelect = $('#modeSelect');
+    const levelSelect = $('#levelSelect');
+    if (modeSelect) modeSelect.onchange = () => {
+      state.mode = modeSelect.value;
       reset();
-    });
-    $$('.level-btn').forEach(b => b.onclick = () => {
-      state.level = Number(b.dataset.level);
-      $$('.level-btn').forEach(x => x.classList.toggle('active', x === b));
+    };
+    if (levelSelect) levelSelect.onchange = () => {
+      state.level = Number(levelSelect.value);
       reset();
-    });
+    };
     $('#check').onclick = check;
     $('#next').onclick = next;
     $('#restart').onclick = reset;
+  }
+
+  function syncSelectors() {
+    const modeSelect = $('#modeSelect');
+    const levelSelect = $('#levelSelect');
+    if (modeSelect) modeSelect.value = state.mode;
+    if (levelSelect) levelSelect.value = String(state.level);
   }
 
   function reset() {
@@ -52,6 +60,7 @@
     state.index = 0;
     state.score = 0;
     state.finished = false;
+    syncSelectors();
     render();
   }
 
@@ -74,6 +83,7 @@
   }
 
   function render() {
+    syncSelectors();
     resetAnswerState();
     updateProgress();
     const q = state.questions[state.index];
@@ -195,7 +205,7 @@
   }
 
   function escapeHtml(v) {
-    return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    return String(v ?? '').replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   }
 
   load().catch(e => {
