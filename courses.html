@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f5f7f5">
-  <meta name="description" content="รายวิชาทั้งหมดในภาคการศึกษาปัจจุบันสำหรับแบบทดสอบรายวิชา">
+  <meta name="description" content="รายวิชาตามชั้นปี ปีการศึกษา และภาคการศึกษา สำหรับแบบทดสอบรายวิชา">
   <title>รายวิชาในเทอมนี้ · แบบทดสอบรายวิชา</title>
   <link rel="stylesheet" href="home.css">
   <script src="home.js" defer></script>
@@ -17,7 +17,11 @@
           <p class="eyebrow">CURRENT COURSES</p>
           <h1 id="coursesTitle">รายวิชาในเทอมนี้</h1>
         </div>
-        <p id="schedulePeriod" class="schedule-period"></p>
+        <div class="heading-meta">
+          <span id="termStatus" class="term-status" hidden></span>
+          <strong id="catalogContext" class="catalog-context"></strong>
+          <p id="schedulePeriod" class="schedule-period"></p>
+        </div>
       </div>
 
       <div id="courseGrid" class="course-grid" aria-live="polite">
