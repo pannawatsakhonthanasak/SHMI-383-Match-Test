@@ -3,57 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#102d3e">
-  <meta name="description" content="แบบทดสอบรายวิชาสำหรับนักศึกษาสาขาเวชระเบียน จัดรายวิชาตามปีการศึกษาและภาคการศึกษา">
+  <meta name="theme-color" content="#f5f7f5">
+  <meta name="description" content="แบบทดสอบรายวิชา จัดตามปีการศึกษาและภาคการศึกษา">
   <title>แบบทดสอบรายวิชา</title>
   <link rel="stylesheet" href="home.css">
   <script src="home.js" defer></script>
 </head>
-<body>
-  <header class="site-header">
-    <a class="brand" href="./" aria-label="หน้าแรก">
-      <span class="brand-mark">SE</span>
-      <span><b>Subject Examinations</b><small>Medical Record</small></span>
-    </a>
-    <span class="header-note">มหาวิทยาลัยมหิดล</span>
-  </header>
+<body class="landing-page">
+  <main class="landing-main">
+    <section class="landing-hero" aria-labelledby="pageTitle">
+      <p class="eyebrow">SUBJECT EXAMINATIONS</p>
+      <h1 id="pageTitle">แบบทดสอบ<br>รายวิชา</h1>
+      <p class="lead">เลือกรายวิชาจากตารางเรียนของปีและภาคการศึกษาปัจจุบัน</p>
 
-  <main>
-    <section class="hero">
-      <div>
-        <p class="eyebrow">SUBJECT EXAMINATIONS</p>
-        <h1>แบบทดสอบรายวิชา</h1>
-        <p class="lead">เลือกรายวิชาจากตารางเรียนของปีและภาคการศึกษาปัจจุบัน</p>
-      </div>
-      <div class="term-card" aria-label="ภาคการศึกษาปัจจุบัน">
+      <a class="term-card term-link" id="termLink" href="courses.html" aria-label="ดูรายวิชาในภาคการศึกษาปัจจุบัน">
         <span>กำลังเรียน</span>
         <strong id="currentTerm">ปี 3 · เทอม 1</strong>
-        <small id="academicYear">กำลังโหลดข้อมูลรายวิชา</small>
-      </div>
-    </section>
-
-    <section class="catalog" aria-labelledby="coursesTitle">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">CURRENT COURSES</p>
-          <h2 id="coursesTitle">รายวิชาในเทอมนี้</h2>
-        </div>
-        <p id="schedulePeriod" class="schedule-period"></p>
-      </div>
-      <div id="courseGrid" class="course-grid" aria-live="polite">
-        <div class="loading">กำลังโหลดรายวิชา…</div>
-      </div>
-    </section>
-
-    <section class="source-note">
-      <strong>รายการวิชาอัปเดตตามตารางเรียน</strong>
-      <p>ระบบจะปรับปี ชั้นปี ภาคการศึกษา และรายวิชาเมื่อมีตารางเรียนฉบับใหม่ที่ยืนยันได้</p>
+        <small id="academicYear">ปีการศึกษา 2569</small>
+      </a>
     </section>
   </main>
-
-  <footer>
-    <span>Subject Examinations</span>
-    <span id="lastUpdated"></span>
-  </footer>
 </body>
 </html>
