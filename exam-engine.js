@@ -190,7 +190,7 @@
     const panel = $('#sourcePanel');
     if (!panel || !meta?.files?.length) return;
     const date = formatThaiDate(meta.lastUpdated);
-    const files = meta.files.map((f, i) => `<li style="padding:8px 0;overflow-wrap:anywhere"><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.title)}</a></li>`).join('');
+    const files = meta.files.map(f => `<li style="padding:8px 0;overflow-wrap:anywhere"><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.title)}</a></li>`).join('');
     panel.hidden = false;
     panel.innerHTML = `<div class="section-head"><div><div class="eyebrow">Lecture Sources</div><h2>แหล่งข้อมูลรายวิชา</h2></div><p>อัปเดตล่าสุด ${escapeHtml(date)}</p></div><div class="course-card glass" style="min-height:0"><div class="course-meta"><span class="tag">Lecture-only</span><span class="tag">${meta.files.length} ไฟล์</span></div><h3>ไฟล์ที่ใช้สร้างข้อมูลและข้อสอบ</h3><ol style="margin:0;padding-left:24px;line-height:1.6">${files}</ol><p style="margin:6px 0 0"><a href="${escapeHtml(meta.lectureFolderUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;text-underline-offset:3px">เปิดโฟลเดอร์ Lecture ใน Google Drive ↗</a></p></div>`;
   }
@@ -205,7 +205,7 @@
   }
 
   function escapeHtml(v) {
-    return String(v ?? '').replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
+    return String(v ?? '').replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   }
 
   load().catch(e => {
