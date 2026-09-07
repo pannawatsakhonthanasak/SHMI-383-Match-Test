@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f7f5">
+  <meta name="description" content="รายวิชาทั้งหมดในภาคการศึกษาปัจจุบันสำหรับแบบทดสอบรายวิชา">
+  <title>รายวิชาในเทอมนี้ · แบบทดสอบรายวิชา</title>
+  <link rel="stylesheet" href="home.css">
+  <script src="home.js" defer></script>
+</head>
+<body class="courses-page">
+  <main class="courses-main">
+    <a class="back-link" href="./" aria-label="กลับหน้าแบบทดสอบรายวิชา">← แบบทดสอบรายวิชา</a>
+
+    <section class="catalog" aria-labelledby="coursesTitle">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CURRENT COURSES</p>
+          <h1 id="coursesTitle">รายวิชาในเทอมนี้</h1>
+        </div>
+        <p id="schedulePeriod" class="schedule-period"></p>
+      </div>
+
+      <div class="term-summary" aria-label="ภาคการศึกษาปัจจุบัน">
+        <strong id="currentTerm">ปี 3 · เทอม 1</strong>
+        <span id="academicYear">ปีการศึกษา 2569</span>
+      </div>
+
+      <div id="courseGrid" class="course-grid" aria-live="polite">
+        <div class="loading">กำลังโหลดรายวิชา…</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
