@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "checkedAt": "2026-09-07T06:44:25Z",
+  "baseline": "inherited-from-questions.json",
+  "sourceFolder": "https://drive.google.com/drive/folders/15C2jPSVSu8a_JCRVqFDbmmhIRTXi0FCw",
+  "lectureFolder": "https://drive.google.com/drive/folders/1kGDfQr5pwMw_Bf5oaLsgZLpNzsXjx3QY",
+  "files": [
+    {
+      "id": "15P3V36okL0lSKmdqNa21wrfRpRF-qmkR",
+      "title": "(วีค 0) ประมวลรายวิชา",
+      "modified": "2026-08-21T06:09:20.032Z",
+      "size": 438244,
+      "questionSource": false
+    },
+    {
+      "id": "1LSRd0ERQ6FNlelLbYqgIJPOSNi5uGK6i",
+      "title": "(วีค 1) การบันทึกทางการแพทย์ของโรคระบบผิวหนัง",
+      "modified": "2026-08-21T06:08:45.562Z",
+      "size": 722268,
+      "questionSource": true
+    },
+    {
+      "id": "1pKY8ronPYT2hkSxD4pBiVclA07R-dEtc",
+      "title": "(วีค 3) การบันทึกทางการแพทย์ของโรคระบบกล้ามเนื้อ กระดูกและข้อ",
+      "modified": "2026-08-21T06:07:04.688Z",
+      "size": 967914,
+      "questionSource": true
+    },
+    {
+      "id": "1Q0BE5xGRdg7R4Mk1I9gkpvYL9oWsWNx6",
+      "title": "(วีค 4) การบันทึกทางการแพทย์ของโรคระบบทางเดินปัสสาวะ",
+      "modified": "2026-09-03T06:37:12.965Z",
+      "size": 1015986,
+      "questionSource": true
+    },
+    {
+      "id": "1Ky9P6QD78m9xVaV2b2C_8vPy1j08Eu9I",
+      "title": "(วีค 5) การบันทึกทางการแพทย์ของโรคระบบสืบพันธุ์ชายและหญิง",
+      "modified": "2026-09-03T06:37:07.837Z",
+      "size": 1184435,
+      "questionSource": true
+    }
+  ],
+  "pendingPublication": null
+}
