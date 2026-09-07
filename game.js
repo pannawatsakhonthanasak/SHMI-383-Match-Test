@@ -1,6 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id);
-const levels={1:{title:'พื้นฐาน',help:'จับคู่ความหมายและลักษณะสำคัญ · รอบละไม่เกิน 4 คู่',size:4},2:{title:'อาการ',help:'แยกอาการและลักษณะของโรคที่ใกล้เคียงกัน · รอบละไม่เกิน 5 คู่',size:5},3:{title:'รายละเอียด',help:'ทบทวนการตรวจ ชนิดย่อย กลไก และหัตถการ · รอบละไม่เกิน 6 คู่',size:6}};
+const levels={1:{title:'ง่าย',help:'ระดับอุดมศึกษา · ทบทวนความหมายและลักษณะสำคัญที่ระบุโดยตรงใน Source · รอบละไม่เกิน 4 คู่',size:4},2:{title:'ปานกลาง',help:'ระดับอุดมศึกษา · เชื่อมโยงอาการ ลักษณะ หรือข้อมูลที่ต้องแยกโรคใกล้เคียงจาก Source · รอบละไม่เกิน 5 คู่',size:5},3:{title:'ยาก',help:'ระดับอุดมศึกษา · ทบทวนการตรวจ ชนิดย่อย กลไก หัตถการ หรือรายละเอียดเชิงลึกที่ระบุใน Source · รอบละไม่เกิน 6 คู่',size:6}};
 let data,level=1,group='all',deck=[],round=[],right=[],links={},selected=null,graded=false,roundNo=0,totalCorrect=0,totalAnswered=0,drag=null,suppressClick=false;
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function element(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
