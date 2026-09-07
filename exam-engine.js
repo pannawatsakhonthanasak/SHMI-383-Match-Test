@@ -12,14 +12,21 @@
 
   async function load() {
     const course = document.body.dataset.course;
-    const r = await fetch(`data/${course}.json?v=${Date.now()}`, {cache:'no-store'});
+    const [r, sr] = await Promise.all([
+      fetch(`data/${course}.json?_=${Date.now()}`, {cache:'no-store'}),
+      fetch(`course-sources.json?_=${Date.now()}`, {cache:'no-store'})
+    ]);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
+    const sourceIndex = sr.ok ? await sr.json() : {courses:{}};
+    const sourceMeta = sourceIndex.courses?.[course] || null;
     window.examData = data;
     document.title = `${data.code} ${data.name}`;
     $('#courseCode').textContent = data.code;
     $('#courseName').textContent = data.name;
-    $('#sourceSummary').textContent = `Lecture ${data.sources.length} แหล่ง · คลัง ${data.questions.length} ชุดข้อสอบ`;
+    const sourceCount = sourceMeta?.files?.length || data.sources.length;
+    $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · คลัง ${data.questions.length} ชุดข้อสอบ`;
+    renderSourcePanel(sourceMeta);
     bind();
     reset();
   }
@@ -167,6 +174,24 @@
     $('#check').hidden = true;
     $('#next').hidden = true;
     $('#again').onclick = reset;
+  }
+
+  function renderSourcePanel(meta) {
+    const panel = $('#sourcePanel');
+    if (!panel || !meta?.files?.length) return;
+    const date = formatThaiDate(meta.lastUpdated);
+    const files = meta.files.map((f, i) => `<li style="padding:8px 0;overflow-wrap:anywhere"><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.title)}</a></li>`).join('');
+    panel.hidden = false;
+    panel.innerHTML = `<div class="section-head"><div><div class="eyebrow">Lecture Sources</div><h2>แหล่งข้อมูลรายวิชา</h2></div><p>อัปเดตล่าสุด ${escapeHtml(date)}</p></div><div class="course-card glass" style="min-height:0"><div class="course-meta"><span class="tag">Lecture-only</span><span class="tag">${meta.files.length} ไฟล์</span></div><h3>ไฟล์ที่ใช้สร้างข้อมูลและข้อสอบ</h3><ol style="margin:0;padding-left:24px;line-height:1.6">${files}</ol><p style="margin:6px 0 0"><a href="${escapeHtml(meta.lectureFolderUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline;text-underline-offset:3px">เปิดโฟลเดอร์ Lecture ใน Google Drive ↗</a></p></div>`;
+  }
+
+  function formatThaiDate(value) {
+    if (!value) return '-';
+    try {
+      return new Intl.DateTimeFormat('th-TH', {day:'numeric', month:'long', year:'numeric', timeZone:'Asia/Bangkok'}).format(new Date(value));
+    } catch {
+      return value;
+    }
   }
 
   function escapeHtml(v) {
