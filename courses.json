@@ -12,7 +12,7 @@
     "sourceFileId": "10tCy3gGafSc54kuKQaaB3fJn-3BHC5LP",
     "sourceModifiedTime": "2026-09-07T08:52:38.142Z"
   },
-  "generatedAt": "2026-09-07T08:55:00Z",
+  "generatedAt": "2026-09-07T09:26:00Z",
   "courses": [
     {
       "code": "สมวบ 381",
@@ -54,8 +54,9 @@
       "code": "สมวบ 380",
       "name": "การจัดการระบบฐานข้อมูลเวชระเบียน",
       "day": "วันศุกร์",
-      "available": false,
-      "path": null
+      "available": true,
+      "path": "shmi-380.html",
+      "testType": "Mixed Database Test"
     }
   ]
 }
