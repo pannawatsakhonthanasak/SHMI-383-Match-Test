@@ -21,19 +21,34 @@
   const contextKey = suffix => `subject-exam:${suffix}:${state.course}:${state.mode}:${state.level}`;
   const courseKey = suffix => `subject-exam:${suffix}:${state.course}`;
 
+  const storageGet = key => {
+    try { return localStorage.getItem(key); }
+    catch {
+      try { return sessionStorage.getItem(key); }
+      catch { return null; }
+    }
+  };
+  const storageSet = (key, value) => {
+    try { localStorage.setItem(key, value); }
+    catch {
+      try { sessionStorage.setItem(key, value); }
+      catch {}
+    }
+  };
+
   const getSet = key => {
-    try { return new Set(JSON.parse(sessionStorage.getItem(key) || '[]')); }
+    try { return new Set(JSON.parse(storageGet(key) || '[]')); }
     catch { return new Set(); }
   };
   const setSet = (key, set, limit = 12000) => {
     const values = [...set];
     if (values.length > limit) values.splice(0, values.length - limit);
-    sessionStorage.setItem(key, JSON.stringify(values));
+    storageSet(key, JSON.stringify(values));
   };
   const getUsedSemantic = () => getSet(contextKey('semantic-used'));
   const setUsedSemantic = set => setSet(contextKey('semantic-used'), set);
   const getRecentConcepts = () => {
-    try { return JSON.parse(sessionStorage.getItem(courseKey('recent-concepts')) || '[]'); }
+    try { return JSON.parse(storageGet(courseKey('recent-concepts')) || '[]'); }
     catch { return []; }
   };
   const pushRecentConcepts = concepts => {
@@ -43,13 +58,13 @@
       if (i >= 0) recent.splice(i, 1);
       recent.push(c);
     });
-    while (recent.length > 36) recent.shift();
-    sessionStorage.setItem(courseKey('recent-concepts'), JSON.stringify(recent));
+    while (recent.length > 72) recent.shift();
+    storageSet(courseKey('recent-concepts'), JSON.stringify(recent));
   };
   const nextSerial = () => {
     const key = contextKey('serial');
-    const value = Number(sessionStorage.getItem(key) || '0') + 1;
-    sessionStorage.setItem(key, String(value));
+    const value = Number(storageGet(key) || '0') + 1;
+    storageSet(key, String(value));
     return value;
   };
 
@@ -73,7 +88,7 @@
     $('#courseCode').textContent = data.code;
     $('#courseName').textContent = data.name;
     const sourceCount = sourceMeta?.files?.length || data.sources?.length || 0;
-    $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · AI-Data Driven · กันข้อซ้ำเชิงความหมาย`;
+    $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · AI-Data Driven · กันข้อซ้ำเชิงความหมายแบบถาวร`;
     renderSourcePanel(sourceMeta);
     bind();
     syncSelectors();
@@ -154,6 +169,22 @@
     }) || null;
   }
 
+  function canonicalNativeFingerprint(q) {
+    if (q.semanticFingerprint) return `fingerprint:${norm(q.semanticFingerprint)}`;
+    const prompt = norm(q.prompt)
+      .replace(/^(อ้างอิง lecture แล้วตอบ|พิจารณาข้อมูลจาก lecture แล้วตอบ|เชื่อมโยงข้อมูลจาก lecture แล้วตอบ|วิเคราะห์ตาม lecture แล้วตอบ)\s*/i, '')
+      .replace(/[□_]+/g, 'blank');
+    if (q.mode === 'blank') {
+      const answers = [...new Set((q.answers || []).map(norm).filter(Boolean))].sort().join('|');
+      return `blank:${prompt}=>${answers}`;
+    }
+    if (q.mode === 'choice') {
+      const correct = Number.isInteger(q.answer) ? norm((q.options || [])[q.answer]) : '';
+      return `choice:${prompt}=>${correct}`;
+    }
+    return `prompt:${prompt}`;
+  }
+
   function nativeMeta(q) {
     if (q.semanticId) {
       return {
@@ -167,8 +198,8 @@
     }
     const relation = relationForNative(q);
     if (relation) return {semantic:`relation:${relation.conceptKey}`, concepts:[relation.conceptKey]};
-    const fallback = q.semanticKey || q.id || norm(q.prompt);
-    return {semantic:`seed:${fallback}`, concepts:(q.conceptIds || [`seed:${fallback}`])};
+    const fallback = q.semanticKey ? `semantic-key:${norm(q.semanticKey)}` : canonicalNativeFingerprint(q);
+    return {semantic:fallback, concepts:(q.conceptIds || [fallback])};
   }
 
   const lead = serial => [
@@ -324,6 +355,14 @@
     return freshConcept || pool[0];
   }
 
+  function rememberDisplayedQuestion(q) {
+    if (!q) return;
+    const used = getUsedSemantic();
+    used.add(q._semanticSignature || q.id);
+    setUsedSemantic(used);
+    pushRecentConcepts(q._conceptKeys || []);
+  }
+
   async function showNextQuestion(forceRefresh = false) {
     state.loadingNext = true;
     if (forceRefresh) {
@@ -338,6 +377,7 @@
     state.current = q;
     if (!q) return renderSemanticExhausted();
     state.exhausted = false;
+    rememberDisplayedQuestion(q);
     renderQuestion();
   }
 
@@ -411,10 +451,6 @@
     state.checked = true;
     state.completed += 1;
     if (ok) state.score += 1;
-    const used = getUsedSemantic();
-    used.add(q._semanticSignature || q.id);
-    setUsedSemantic(used);
-    pushRecentConcepts(q._conceptKeys || []);
     lockAndReveal(q, ok);
     renderExplanation(q, ok);
     const action = $('#actionButton');
@@ -473,7 +509,7 @@
     syncSelectors();
     $('#modeLabel').textContent = `${modeName(state.mode)} · ระดับ${levelName(state.level)}`;
     $('#progress').textContent = `ทำแล้ว ${state.completed} ข้อ · ถูก ${state.score}`;
-    $('#questionArea').innerHTML = '<div class="empty-state"><h2>ยังไม่มี Blueprint ใหม่ที่ไม่ซ้ำ</h2><p>ระบบหยุดก่อนถามสาระเดิมซ้ำ และจะตรวจข้อมูล AI-Data Driven ล่าสุดอีกครั้งเมื่อกดปุ่มด้านล่าง</p></div>';
+    $('#questionArea').innerHTML = '<div class="empty-state"><h2>ยังไม่มี Blueprint ใหม่ที่ไม่ซ้ำ</h2><p>ระบบจะไม่วนคำถามเดิม แม้รีเฟรชหรือเปิดใหม่ หากยังไม่มีสาระใหม่จาก Lecture ระบบจะหยุดแทนการสร้างข้อซ้ำ</p></div>';
     $('#feedback').innerHTML = '';
     const action = $('#actionButton');
     action.textContent = 'ตรวจข้อมูลใหม่';
