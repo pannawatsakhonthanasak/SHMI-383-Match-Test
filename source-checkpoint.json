@@ -1,17 +1,11 @@
 {
-  "version": 1,
-  "checkedAt": "2026-09-07T06:44:25Z",
-  "baseline": "inherited-from-questions.json",
+  "version": 2,
+  "checkedAt": "2026-09-08T03:06:03Z",
+  "baseline": "Lecture-only-current",
   "sourceFolder": "https://drive.google.com/drive/folders/15C2jPSVSu8a_JCRVqFDbmmhIRTXi0FCw",
   "lectureFolder": "https://drive.google.com/drive/folders/1kGDfQr5pwMw_Bf5oaLsgZLpNzsXjx3QY",
+  "sourcePolicy": "Lecture only; Week 0/0.x excluded from all use and display",
   "files": [
-    {
-      "id": "15P3V36okL0lSKmdqNa21wrfRpRF-qmkR",
-      "title": "(วีค 0) ประมวลรายวิชา",
-      "modified": "2026-08-21T06:09:20.032Z",
-      "size": 438244,
-      "questionSource": false
-    },
     {
       "id": "1LSRd0ERQ6FNlelLbYqgIJPOSNi5uGK6i",
       "title": "(วีค 1) การบันทึกทางการแพทย์ของโรคระบบผิวหนัง",
@@ -41,5 +35,6 @@
       "questionSource": true
     }
   ],
+  "excludedWeekZeroFiles": 1,
   "pendingPublication": null
 }
