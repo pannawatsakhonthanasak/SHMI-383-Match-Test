@@ -2,13 +2,12 @@
   const state = {
     course: '', mode: 'match', level: 1, current: null,
     selected: null, answer: '', matched: {}, score: 0, completed: 0,
-    checked: false, loadingNext: false
+    checked: false, loadingNext: false, exhausted: false
   };
 
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
   const shuffle = a => [...a].sort(() => Math.random() - .5);
-  const sample = (a, n) => shuffle(a).slice(0, Math.min(n, a.length));
   const levelName = n => ({1:'ง่าย',2:'ปานกลาง',3:'ยาก'}[n] || '');
   const modeName = m => m === 'match' ? 'จับคู่' : m === 'blank' ? 'เติมลงในช่องว่าง' : 'ก, ข, ค, ง';
   const difficultyText = n => ({
@@ -16,17 +15,36 @@
     2:'ระดับอุดมศึกษา · เชื่อมโยง เปรียบเทียบ และประยุกต์แนวคิดจาก Lecture',
     3:'ระดับอุดมศึกษา · วิเคราะห์รายละเอียด หลายเงื่อนไข และการตัดสินใจจาก Lecture'
   }[n] || '');
-  const norm = s => (s || '').toLowerCase().trim().replace(/[.,;:()\[\]{}]/g, '').replace(/\s+/g, ' ');
+  const norm = s => String(s || '').toLowerCase().trim().replace(/[.,;:()\[\]{}“”"'`]/g, '').replace(/\s+/g, ' ');
+  const canonicalPair = (a, b) => [norm(a), norm(b)].sort().join('<=>');
 
   const contextKey = suffix => `subject-exam:${suffix}:${state.course}:${state.mode}:${state.level}`;
-  const getUsed = () => {
-    try { return new Set(JSON.parse(sessionStorage.getItem(contextKey('used')) || '[]')); }
+  const courseKey = suffix => `subject-exam:${suffix}:${state.course}`;
+
+  const getSet = key => {
+    try { return new Set(JSON.parse(sessionStorage.getItem(key) || '[]')); }
     catch { return new Set(); }
   };
-  const setUsed = set => {
+  const setSet = (key, set, limit = 12000) => {
     const values = [...set];
-    if (values.length > 6000) values.splice(0, values.length - 6000);
-    sessionStorage.setItem(contextKey('used'), JSON.stringify(values));
+    if (values.length > limit) values.splice(0, values.length - limit);
+    sessionStorage.setItem(key, JSON.stringify(values));
+  };
+  const getUsedSemantic = () => getSet(contextKey('semantic-used'));
+  const setUsedSemantic = set => setSet(contextKey('semantic-used'), set);
+  const getRecentConcepts = () => {
+    try { return JSON.parse(sessionStorage.getItem(courseKey('recent-concepts')) || '[]'); }
+    catch { return []; }
+  };
+  const pushRecentConcepts = concepts => {
+    const recent = getRecentConcepts();
+    concepts.forEach(c => {
+      const i = recent.indexOf(c);
+      if (i >= 0) recent.splice(i, 1);
+      recent.push(c);
+    });
+    while (recent.length > 36) recent.shift();
+    sessionStorage.setItem(courseKey('recent-concepts'), JSON.stringify(recent));
   };
   const nextSerial = () => {
     const key = contextKey('serial');
@@ -54,8 +72,8 @@
     document.title = `${data.code} ${data.name}`;
     $('#courseCode').textContent = data.code;
     $('#courseName').textContent = data.name;
-    const sourceCount = sourceMeta?.files?.length || data.sources.length;
-    $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · สร้างข้อแบบต่อเนื่องโดยไม่ผูกจำนวนข้อกับคลังสำเร็จรูป`;
+    const sourceCount = sourceMeta?.files?.length || data.sources?.length || 0;
+    $('#sourceSummary').textContent = `Lecture ${sourceCount} ไฟล์ · AI-Data Driven · กันข้อซ้ำเชิงความหมาย`;
     renderSourcePanel(sourceMeta);
     bind();
     syncSelectors();
@@ -75,6 +93,11 @@
     };
     $('#actionButton').onclick = async () => {
       if (state.loadingNext) return;
+      if (state.exhausted) {
+        state.exhausted = false;
+        await showNextQuestion(true);
+        return;
+      }
       if (state.checked) await next();
       else check();
     };
@@ -91,8 +114,9 @@
     state.completed = 0;
     state.current = null;
     state.checked = false;
+    state.exhausted = false;
     syncSelectors();
-    await showNextQuestion();
+    await showNextQuestion(false);
   }
 
   function nativeQuestions(mode = state.mode) {
@@ -103,9 +127,9 @@
     const map = new Map();
     nativeQuestions('match').forEach(q => {
       (q.pairs || []).forEach((p, i) => {
-        const key = `${norm(p.left)}=>${norm(p.right)}`;
-        if (!map.has(key)) map.set(key, {
-          key,
+        const conceptKey = canonicalPair(p.left, p.right);
+        if (!map.has(conceptKey)) map.set(conceptKey, {
+          conceptKey,
           left: p.left,
           right: p.right,
           source: q.source || '',
@@ -117,97 +141,62 @@
     return [...map.values()];
   }
 
-  const promptLead = serial => {
-    const leads = [
-      'อ้างอิง Lecture แล้วตอบ',
-      'พิจารณาข้อมูลจาก Lecture แล้วตอบ',
-      'จากเนื้อหาใน Lecture ให้ตอบ',
-      'ทบทวนจาก Lecture แล้วตอบ',
-      'ใช้ข้อมูลใน Lecture เพื่อพิจารณา',
-      'ประเมินจากหลักการใน Lecture แล้วตอบ',
-      'เชื่อมโยงข้อมูลใน Lecture แล้วตอบ',
-      'วิเคราะห์ตาม Lecture แล้วตอบ'
-    ];
-    return `${leads[(serial - 1) % leads.length]} · รอบฝึก ${serial}`;
-  };
+  function relationForNative(q) {
+    if (q.semanticId || q.conceptIds?.length || q.mode === 'match') return null;
+    const prompt = norm(q.prompt);
+    let correct = '';
+    if (q.mode === 'blank') correct = norm((q.answers || [])[0]);
+    if (q.mode === 'choice' && Number.isInteger(q.answer)) correct = norm((q.options || [])[q.answer]);
+    if (!correct) return null;
+    return relationPool().find(r => {
+      const left = norm(r.left), right = norm(r.right);
+      return (prompt.includes(left) && correct === right) || (prompt.includes(right) && correct === left);
+    }) || null;
+  }
 
-  function makeNativeVariant(serial) {
-    const pool = nativeQuestions();
-    if (!pool.length) return null;
-    const q = pool[(serial - 1) % pool.length];
-    const lead = promptLead(serial);
+  function nativeMeta(q) {
+    if (q.semanticId) {
+      return {
+        semantic: `ai:${q.semanticId}`,
+        concepts: (q.conceptIds?.length ? q.conceptIds : [q.semanticId]).map(x => `ai:${x}`)
+      };
+    }
+    if (q.mode === 'match') {
+      const concepts = (q.pairs || []).map(p => canonicalPair(p.left, p.right));
+      return {semantic:`match-set:${[...concepts].sort().join('|')}`, concepts};
+    }
+    const relation = relationForNative(q);
+    if (relation) return {semantic:`relation:${relation.conceptKey}`, concepts:[relation.conceptKey]};
+    const fallback = q.semanticKey || q.id || norm(q.prompt);
+    return {semantic:`seed:${fallback}`, concepts:(q.conceptIds || [`seed:${fallback}`])};
+  }
 
-    if (state.mode === 'choice') {
-      const indexed = q.options.map((text, i) => ({text, original:i}));
-      const rotated = indexed.slice(serial % indexed.length).concat(indexed.slice(0, serial % indexed.length));
-      if (Math.floor(serial / indexed.length) % 2) rotated.reverse();
+  const lead = serial => [
+    'อ้างอิง Lecture แล้วตอบ',
+    'พิจารณาข้อมูลจาก Lecture แล้วตอบ',
+    'เชื่อมโยงข้อมูลจาก Lecture แล้วตอบ',
+    'วิเคราะห์ตาม Lecture แล้วตอบ'
+  ][serial % 4];
+
+  function makeNativeVariant(q, serial) {
+    const meta = nativeMeta(q);
+    if (q.mode === 'choice') {
+      const indexed = (q.options || []).map((text, i) => ({text, original:i}));
+      const rotated = indexed.slice(serial % Math.max(1, indexed.length)).concat(indexed.slice(0, serial % Math.max(1, indexed.length)));
+      if (Math.floor(serial / Math.max(1, indexed.length)) % 2) rotated.reverse();
       const answer = rotated.findIndex(x => x.original === q.answer);
-      return {
-        ...q,
-        id: `runtime:${q.id}:n${serial}`,
-        prompt: `${lead}: ${q.prompt}`,
-        options: rotated.map(x => x.text),
-        answer,
-        _signature: `native:${q.id}:choice:${serial}`
-      };
+      return {...q, id:`runtime:${q.id}:n${serial}`, prompt:`${lead(serial)}: ${q.prompt}`, options:rotated.map(x=>x.text), answer, _semanticSignature:meta.semantic, _conceptKeys:meta.concepts};
     }
-
-    if (state.mode === 'blank') {
-      return {
-        ...q,
-        id: `runtime:${q.id}:n${serial}`,
-        prompt: `${lead}: ${q.prompt}`,
-        _signature: `native:${q.id}:blank:${serial}`
-      };
+    if (q.mode === 'blank') {
+      return {...q, id:`runtime:${q.id}:n${serial}`, prompt:`${lead(serial)}: ${q.prompt}`, _semanticSignature:meta.semantic, _conceptKeys:meta.concepts};
     }
-
-    const pairs = q.pairs || [];
-    const rotated = pairs.slice(serial % Math.max(1, pairs.length)).concat(pairs.slice(0, serial % Math.max(1, pairs.length)));
-    return {
-      ...q,
-      id: `runtime:${q.id}:n${serial}`,
-      prompt: `${lead}: ${q.prompt}`,
-      pairs: Math.floor(serial / Math.max(1, pairs.length)) % 2 ? [...rotated].reverse() : rotated,
-      _signature: `native:${q.id}:match:${serial}`
-    };
+    const pairs = [...(q.pairs || [])];
+    const offset = serial % Math.max(1, pairs.length);
+    const rotated = pairs.slice(offset).concat(pairs.slice(0, offset));
+    return {...q, id:`runtime:${q.id}:n${serial}`, prompt:`${lead(serial)}: ${q.prompt}`, pairs:Math.floor(serial / Math.max(1,pairs.length)) % 2 ? rotated.reverse() : rotated, _semanticSignature:meta.semantic, _conceptKeys:meta.concepts};
   }
 
-  function makeMatchGenerated(serial) {
-    const relations = relationPool();
-    if (relations.length < 2) return makeNativeVariant(serial);
-    const desired = state.level === 1 ? 4 : state.level === 2 ? 5 : 6;
-    const count = Math.min(Math.max(3, desired), relations.length);
-    const offset = (serial - 1) % relations.length;
-    const walked = relations.map((_, i) => relations[(offset + i * 3) % relations.length]);
-    const unique = [];
-    const seen = new Set();
-    walked.forEach(r => { if (!seen.has(r.key) && unique.length < count) { seen.add(r.key); unique.push(r); } });
-    const pairs = unique.map(r => ({left:r.left, right:r.right}));
-    const source = [...new Set(unique.map(r => r.source).filter(Boolean))].join(' · ');
-    const explanation = `คู่ที่ถูกต้องทั้งหมดมาจาก Lecture: ${unique.map(r => `${r.left} ↔ ${r.right}`).join('; ')}`;
-    const prompts = {
-      1:'จับคู่คำหรือรหัสกับความหมายให้ถูกต้องตาม Lecture',
-      2:'จับคู่แนวคิดที่สัมพันธ์กันให้ถูกต้องตาม Lecture',
-      3:'จับคู่ความสัมพันธ์หลายเงื่อนไขให้ถูกต้องตาม Lecture'
-    };
-    return {
-      id:`runtime:generated-match:${serial}`,
-      level:state.level,
-      mode:'match',
-      prompt:`${promptLead(serial)}: ${prompts[state.level]}`,
-      pairs,
-      source,
-      explanation,
-      _signature:`generated:match:${serial}:${unique.map(r => r.key).join('|')}`
-    };
-  }
-
-  function makeBlankGenerated(serial) {
-    const relations = relationPool();
-    if (!relations.length) return makeNativeVariant(serial);
-    const r = relations[(serial - 1) % relations.length];
-    const reverseAllowed = String(r.left).length <= 46 && String(r.right).length <= 46;
-    const reverse = reverseAllowed && Math.floor((serial - 1) / Math.max(1, relations.length)) % 2 === 1;
+  function makeGeneratedBlank(r, reverse, serial) {
     const questionSide = reverse ? r.right : r.left;
     const answerSide = reverse ? r.left : r.right;
     const prompts = {
@@ -216,37 +205,33 @@
       3:`ระบุคำตอบที่ทำให้ความสัมพันธ์นี้ถูกต้องตาม Lecture: ${questionSide} → ______`
     };
     return {
-      id:`runtime:generated-blank:${serial}`,
-      level:state.level,
-      mode:'blank',
-      prompt:`${promptLead(serial)}: ${prompts[state.level]}`,
-      answers:[String(answerSide)],
-      source:r.source,
+      id:`runtime:ai-blank:${serial}`,
+      level:state.level, mode:'blank', prompt:`${lead(serial)}: ${prompts[state.level]}`,
+      answers:[String(answerSide)], source:r.source,
       explanation:`Lecture ระบุความสัมพันธ์ ${r.left} ↔ ${r.right}${r.explanation ? ` — ${r.explanation}` : ''}`,
-      _signature:`generated:blank:${serial}:${r.key}:${reverse ? 'r' : 'f'}`
+      _semanticSignature:`relation:${r.conceptKey}`,
+      _conceptKeys:[r.conceptKey]
     };
   }
 
-  function makeChoiceGenerated(serial) {
+  function makeGeneratedChoice(r, reverse, serial) {
     const relations = relationPool();
-    if (relations.length < 4) return makeNativeVariant(serial);
-    const target = relations[(serial - 1) % relations.length];
-    const reverse = Math.floor((serial - 1) / relations.length) % 2 === 1;
-    const questionSide = reverse ? target.right : target.left;
-    const correct = reverse ? target.left : target.right;
-    const candidates = relations.filter(r => r.key !== target.key).map(r => reverse ? r.left : r.right);
+    if (relations.length < 4) return null;
+    const questionSide = reverse ? r.right : r.left;
+    const correct = reverse ? r.left : r.right;
+    const candidates = relations.filter(x => x.conceptKey !== r.conceptKey).map(x => reverse ? x.left : x.right);
     const distinct = [...new Set(candidates.filter(x => norm(x) !== norm(correct)))];
-    if (distinct.length < 3) return makeNativeVariant(serial);
-    const start = (serial * 3) % distinct.length;
+    if (distinct.length < 3) return null;
+    const offset = serial % distinct.length;
     const distractors = [];
     for (let i = 0; i < distinct.length && distractors.length < 3; i++) {
-      const x = distinct[(start + i * 2) % distinct.length];
+      const x = distinct[(offset + i) % distinct.length];
       if (!distractors.some(d => norm(d) === norm(x))) distractors.push(x);
     }
-    const raw = [correct, ...distractors];
+    let options = [correct, ...distractors];
     const shift = serial % 4;
-    let options = raw.slice(shift).concat(raw.slice(0, shift));
-    if (Math.floor(serial / 4) % 2) options = options.reverse();
+    options = options.slice(shift).concat(options.slice(0, shift));
+    if (Math.floor(serial / 4) % 2) options.reverse();
     const answer = options.findIndex(x => norm(x) === norm(correct));
     const prompts = {
       1:`ข้อใดตรงกับ “${questionSide}” ตาม Lecture?`,
@@ -254,44 +239,105 @@
       3:`จากความสัมพันธ์ที่ Lecture ระบุ ข้อใดเป็นคำตอบที่ถูกต้องสำหรับ “${questionSide}”?`
     };
     return {
-      id:`runtime:generated-choice:${serial}`,
-      level:state.level,
-      mode:'choice',
-      prompt:`${promptLead(serial)}: ${prompts[state.level]}`,
-      options,
-      answer,
-      source:target.source,
-      explanation:`Lecture ระบุความสัมพันธ์ ${target.left} ↔ ${target.right}${target.explanation ? ` — ${target.explanation}` : ''}`,
-      _signature:`generated:choice:${serial}:${target.key}:${reverse ? 'r' : 'f'}:${distractors.map(norm).join('|')}`
+      id:`runtime:ai-choice:${serial}`,
+      level:state.level, mode:'choice', prompt:`${lead(serial)}: ${prompts[state.level]}`,
+      options, answer, source:r.source,
+      explanation:`Lecture ระบุความสัมพันธ์ ${r.left} ↔ ${r.right}${r.explanation ? ` — ${r.explanation}` : ''}`,
+      _semanticSignature:`relation:${r.conceptKey}`,
+      _conceptKeys:[r.conceptKey]
     };
   }
 
-  function buildContinuousQuestion() {
-    const serial = nextSerial();
-    const used = getUsed();
-    const preferNativeEvery = state.level === 3 ? 2 : state.level === 2 ? 3 : 4;
-    let q;
-    if (serial % preferNativeEvery === 0) q = makeNativeVariant(serial);
-    else if (state.mode === 'match') q = makeMatchGenerated(serial);
-    else if (state.mode === 'blank') q = makeBlankGenerated(serial);
-    else q = makeChoiceGenerated(serial);
-    if (!q) return null;
-    if (used.has(q._signature)) {
-      q = makeNativeVariant(serial + 1000000) || q;
+  function generatedMatchCandidates(serial) {
+    const relations = relationPool();
+    if (relations.length < 2) return [];
+    const desired = Math.min(relations.length, state.level === 1 ? 3 : state.level === 2 ? 4 : 5);
+    const sizes = [...new Set([Math.max(2, desired - 1), desired])];
+    const steps = [1,2,3,5,7].filter(s => s < relations.length);
+    const out = [];
+    const seen = new Set();
+    for (const size of sizes) {
+      for (const step of steps.length ? steps : [1]) {
+        for (let offset = 0; offset < relations.length; offset++) {
+          const picked = [];
+          const local = new Set();
+          for (let i = 0; i < relations.length * 2 && picked.length < size; i++) {
+            const r = relations[(offset + i * step) % relations.length];
+            if (!local.has(r.conceptKey)) { local.add(r.conceptKey); picked.push(r); }
+          }
+          if (picked.length < 2) continue;
+          const concepts = picked.map(r=>r.conceptKey);
+          const semantic = `match-set:${[...concepts].sort().join('|')}`;
+          if (seen.has(semantic)) continue;
+          seen.add(semantic);
+          const source = [...new Set(picked.map(r=>r.source).filter(Boolean))].join(' · ');
+          const prompts = {
+            1:'จับคู่คำหรือรหัสกับความหมายให้ถูกต้องตาม Lecture',
+            2:'จับคู่แนวคิดที่สัมพันธ์กันให้ถูกต้องตาม Lecture',
+            3:'จับคู่ความสัมพันธ์หลายเงื่อนไขให้ถูกต้องตาม Lecture'
+          };
+          out.push({
+            id:`runtime:ai-match:${serial}:${out.length}`, level:state.level, mode:'match',
+            prompt:`${lead(serial + out.length)}: ${prompts[state.level]}`,
+            pairs:picked.map(r=>({left:r.left,right:r.right})), source,
+            explanation:`คู่ที่ถูกต้องมาจาก Lecture: ${picked.map(r=>`${r.left} ↔ ${r.right}`).join('; ')}`,
+            _semanticSignature:semantic, _conceptKeys:concepts
+          });
+        }
+      }
     }
-    return q;
+    return out;
   }
 
-  async function showNextQuestion() {
+  function buildCandidatePool(serial) {
+    const candidates = nativeQuestions().map((q,i) => makeNativeVariant(q, serial + i));
+    const relations = relationPool();
+    if (state.mode === 'blank') {
+      relations.forEach((r,i) => {
+        candidates.push(makeGeneratedBlank(r, false, serial + i));
+        if (String(r.left).length <= 60 && String(r.right).length <= 60) candidates.push(makeGeneratedBlank(r, true, serial + i + relations.length));
+      });
+    } else if (state.mode === 'choice') {
+      relations.forEach((r,i) => {
+        const a = makeGeneratedChoice(r, false, serial + i);
+        const b = makeGeneratedChoice(r, true, serial + i + relations.length);
+        if (a) candidates.push(a);
+        if (b) candidates.push(b);
+      });
+    } else {
+      candidates.push(...generatedMatchCandidates(serial));
+    }
+    const deduped = new Map();
+    candidates.filter(Boolean).forEach(q => {
+      if (!deduped.has(q._semanticSignature)) deduped.set(q._semanticSignature, q);
+    });
+    return shuffle([...deduped.values()]);
+  }
+
+  function chooseUniqueCandidate() {
+    const used = getUsedSemantic();
+    const recent = new Set(getRecentConcepts());
+    const serial = nextSerial();
+    const pool = buildCandidatePool(serial).filter(q => !used.has(q._semanticSignature));
+    if (!pool.length) return null;
+    const freshConcept = pool.find(q => !(q._conceptKeys || []).some(c => recent.has(c)));
+    return freshConcept || pool[0];
+  }
+
+  async function showNextQuestion(forceRefresh = false) {
     state.loadingNext = true;
-    let q = buildContinuousQuestion();
-    if (!q) {
+    if (forceRefresh) {
       try { await fetchCourseData(); } catch {}
-      q = buildContinuousQuestion();
+    }
+    let q = chooseUniqueCandidate();
+    if (!q && !forceRefresh) {
+      try { await fetchCourseData(); } catch {}
+      q = chooseUniqueCandidate();
     }
     state.loadingNext = false;
     state.current = q;
-    if (!q) return renderUnavailable();
+    if (!q) return renderSemanticExhausted();
+    state.exhausted = false;
     renderQuestion();
   }
 
@@ -365,9 +411,10 @@
     state.checked = true;
     state.completed += 1;
     if (ok) state.score += 1;
-    const used = getUsed();
-    used.add(q._signature || q.id);
-    setUsed(used);
+    const used = getUsedSemantic();
+    used.add(q._semanticSignature || q.id);
+    setUsedSemantic(used);
+    pushRecentConcepts(q._conceptKeys || []);
     lockAndReveal(q, ok);
     renderExplanation(q, ok);
     const action = $('#actionButton');
@@ -418,17 +465,20 @@
 
   async function next() {
     if (!state.checked) return;
-    await showNextQuestion();
+    await showNextQuestion(false);
   }
 
-  function renderUnavailable() {
+  function renderSemanticExhausted() {
+    state.exhausted = true;
     syncSelectors();
-    $('#progress').textContent = 'กำลังรอข้อมูล Lecture';
-    $('#questionArea').innerHTML = '<div class="empty-state"><h2>ยังสร้างข้อสอบไม่ได้</h2><p>ไม่พบข้อมูลข้อสอบหรือความสัมพันธ์จาก Lecture สำหรับรูปแบบและระดับนี้</p></div>';
+    $('#modeLabel').textContent = `${modeName(state.mode)} · ระดับ${levelName(state.level)}`;
+    $('#progress').textContent = `ทำแล้ว ${state.completed} ข้อ · ถูก ${state.score}`;
+    $('#questionArea').innerHTML = '<div class="empty-state"><h2>ยังไม่มี Blueprint ใหม่ที่ไม่ซ้ำ</h2><p>ระบบหยุดก่อนถามสาระเดิมซ้ำ และจะตรวจข้อมูล AI-Data Driven ล่าสุดอีกครั้งเมื่อกดปุ่มด้านล่าง</p></div>';
     $('#feedback').innerHTML = '';
     const action = $('#actionButton');
-    action.textContent = 'ยังไม่มีข้อมูล';
-    action.disabled = true;
+    action.textContent = 'ตรวจข้อมูลใหม่';
+    action.disabled = false;
+    action.classList.remove('next-state');
   }
 
   function renderSourcePanel(meta) {
@@ -437,7 +487,7 @@
     const date = formatThaiDate(meta.lastUpdated);
     const files = meta.files.map(f => `<li><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title)}</a></li>`).join('');
     panel.hidden = false;
-    panel.innerHTML = `<div class="source-card glass"><div class="source-head"><div><div class="eyebrow">Lecture Sources</div><h2>แหล่งข้อมูลรายวิชา</h2></div><div class="source-date">อัปเดตล่าสุด ${escapeHtml(date)}</div></div><div class="source-meta"><span class="tag">Lecture-only</span><span class="tag">${meta.files.length} ไฟล์</span></div><ol class="source-list">${files}</ol><a class="source-folder" href="${escapeHtml(meta.lectureFolderUrl)}" target="_blank" rel="noopener noreferrer">เปิดโฟลเดอร์ Lecture ใน Google Drive ↗</a></div>`;
+    panel.innerHTML = `<div class="source-card glass"><div class="source-head"><div><div class="eyebrow">Lecture Sources</div><h2>แหล่งข้อมูลรายวิชา</h2></div><div class="source-date">อัปเดตล่าสุด ${escapeHtml(date)}</div></div><div class="source-meta"><span class="tag">Lecture-only</span><span class="tag">AI-Data Driven</span><span class="tag">${meta.files.length} ไฟล์</span></div><ol class="source-list">${files}</ol><a class="source-folder" href="${escapeHtml(meta.lectureFolderUrl)}" target="_blank" rel="noopener noreferrer">เปิดโฟลเดอร์ Lecture ใน Google Drive ↗</a></div>`;
   }
 
   function formatThaiDate(value) {
