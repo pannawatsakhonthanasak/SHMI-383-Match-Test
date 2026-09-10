@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "checkedAt": "2026-09-08T03:06:03Z",
+  "checkedAt": "2026-09-10T04:08:51Z",
   "baseline": "Lecture-only-current",
   "sourceFolder": "https://drive.google.com/drive/folders/15C2jPSVSu8a_JCRVqFDbmmhIRTXi0FCw",
   "lectureFolder": "https://drive.google.com/drive/folders/1kGDfQr5pwMw_Bf5oaLsgZLpNzsXjx3QY",
@@ -32,6 +32,13 @@
       "title": "(วีค 5) การบันทึกทางการแพทย์ของโรคระบบสืบพันธุ์ชายและหญิง",
       "modified": "2026-09-03T06:37:07.837Z",
       "size": 1184435,
+      "questionSource": true
+    },
+    {
+      "id": "13pCXTqSF4jk6IHIAhnJDfPn3eflcNt14",
+      "title": "(วีค 6) การบันทึกทางการแพทย์การตั้งครรภ์และการคลอด",
+      "modified": "2026-09-10T02:51:10.576Z",
+      "size": 2419570,
       "questionSource": true
     }
   ],
