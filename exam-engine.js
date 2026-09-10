@@ -521,7 +521,7 @@
     const panel = $('#sourcePanel');
     if (!panel || !meta?.files?.length) return;
     const date = formatThaiDate(meta.lastUpdated);
-    const files = meta.files.map(f => `<li><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title)}</a></li>`).join('');
+    const files = meta.files.map(f => `<li><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title)}</a><span class="source-file-date">แก้ไขล่าสุด ${escapeHtml(formatThaiDate(f.modified))}</span></li>`).join('');
     panel.hidden = false;
     panel.innerHTML = `<div class="source-card glass"><div class="source-head"><div><div class="eyebrow">Lecture Sources</div><h2>แหล่งข้อมูลรายวิชา</h2></div><div class="source-date">อัปเดตล่าสุด ${escapeHtml(date)}</div></div><div class="source-meta"><span class="tag">Lecture-only</span><span class="tag">AI-Data Driven</span><span class="tag">${meta.files.length} ไฟล์</span></div><ol class="source-list">${files}</ol><a class="source-folder" href="${escapeHtml(meta.lectureFolderUrl)}" target="_blank" rel="noopener noreferrer">เปิดโฟลเดอร์ Lecture ใน Google Drive ↗</a></div>`;
   }
